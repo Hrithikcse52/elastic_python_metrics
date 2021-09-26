@@ -1,0 +1,10 @@
+{
+    "mappings": {
+        "properties": {
+            "pid": {"type": "integer"},
+            "name": {"type": "text"},
+            "memory": {"type": "integer"},
+            "cpu_time": {"type": "integer"},
+            }
+        }
+    }
