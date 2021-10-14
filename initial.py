@@ -1,7 +1,6 @@
 from elasticsearch import Elasticsearch
 import psutil
-import json
-from psutil._common import bytes2human
+
 
 
 
@@ -13,28 +12,6 @@ def connect_elasticsearch():
     else:
         print('Awww it could not connect!')
     return _es
-
-def create_index(es_object, index_name):
-    created = False
-    settings = {
-    "mappings": {
-        "properties": {
-            "pid": {"type": "integer"},
-            "name": {"type": "text"},
-            "memory": {"type": "integer"},
-            "cpu_time": {"type": "integer"},
-            }
-        }
-    }
-    try:
-        if not es_object.indices.exists(index_name):
-            es_object.indices.create(index=index_name, ignore=400, body=settings)
-            print('Created Index')
-        created = True
-    except Exception as ex:
-        print(str(ex))
-    finally:
-        return created
 
 
 
@@ -50,41 +27,95 @@ def store_record(elastic_object, index_name, record):
     finally:
         return is_stored
 
-def send_data(res):
+
+
+def create_index_cpu(es_object, index_name):
+    created = False
+    settings = {
+    "mappings": {
+        "properties": {
+            "cpu_usage": {"type": "float"},
+            }
+        }
+    }
+    try:
+        if not es_object.indices.exists(index_name):
+            es_object.indices.create(index=index_name, ignore=400, body=settings)
+            print('Created Index')
+        created = True
+    except Exception as ex:
+        print(str(ex))
+    finally:
+        return created
+
+def create_index_mem(es_object, index_name):
+    created = False
+    settings = {
+    "mappings": {
+        "properties": {
+            "memory_usage": {"type": "integer"},
+            }
+        }
+    }
+    try:
+        if not es_object.indices.exists(index_name):
+            es_object.indices.create(index=index_name, ignore=400, body=settings)
+            print('Created Index')
+        created = True
+    except Exception as ex:
+        print(str(ex))
+    finally:
+        return created
+
+
+
+
+def send_data_cpu(res):
     es = connect_elasticsearch()
     if es is not None:
-        if create_index(es, 'metrics'):
-            out = store_record(es, 'metrics', res)
-            print('Data indexed successfully',out)
+        if create_index_cpu(es, 'cpu'):
+            out = store_record(es, 'cpu', res)
+            print('Data indexed CPU',out)
 
 
-def get_cpu(pid):
-    print(pid)
-    p = psutil.Process(pid)
-    return p.cpu_percent(interval=None)
 
+
+def send_data_mem(res):
+    es = connect_elasticsearch()
+    if es is not None:
+        if create_index_mem(es, 'cpu'):
+            out = store_record(es, 'cpu', res)
+            print('Data indexed MEM',out)
 def main():
-    # pprint_ntuple(psutil.virtual_memory())
-    total_in_bytes = getattr(psutil.virtual_memory(),'total')
-    forty_percent_memory = total_in_bytes *0.4
-    total_human_read = bytes2human(total_in_bytes)
-    pp = ([(p.pid, p.info['name'], int((p.info['memory_info'].rss) /(1024*1024)) , sum(p.info['cpu_times'])) for p in sorted(psutil.process_iter(['name', 'memory_info','cpu_times']), key=lambda p: sum(p.info['cpu_times'][:2]))])
     
-    
-    
-    
-    modelType = ['pid','name','memory' ,'cpu_time']
-    model = [{ modelType[i] : it[i] for i  in range(0,4)} for it in pp ]
-    
-
-    
-    
-    res =json.dumps(model)
-    for it in model:
-        # print(it)
-        send_data(it)
+    cpu_data = []
+    memory_data = []
+    for process in psutil.process_iter():
+        with process.oneshot():
+            cpu_usage = psutil.cpu_percent(interval=0.01)/psutil.cpu_count()
+            cpu_data.append({
+            'cpu_usage' : cpu_usage
+            })
+            print("process",process.pid)
+    for process in psutil.process_iter():
+        with process.oneshot():
+            memory_usage = process.memory_full_info().uss / (1024 *1024)
+            memory_data.append({
+            'memory_usage' : memory_usage
+            })
 
 
+    for p in cpu_data:
+        send_data_cpu(p)
+    
+    for p in memory_data:
+        send_data_mem(p)
+
+
+
+
+   
 
 if __name__ == '__main__':
     main()
+

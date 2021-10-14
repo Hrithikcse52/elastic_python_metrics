@@ -7,9 +7,8 @@ services:
       - "9200:9200"
       - "9300:9300"
     environment:
-      # Use single node discovery in order to disable production mode and avoid bootstrap checks.
-      # see: https://www.elastic.co/guide/en/elasticsearch/reference/current/bootstrap-checks.html
-      discovery.type: single-node
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
       # Force publishing on the 'elk' overlay
     networks:
       - elk

@@ -1,10 +1,14 @@
-{
-    "mappings": {
+"mappings": {
         "properties": {
-            "pid": {"type": "integer"},
-            "name": {"type": "text"},
-            "memory": {"type": "integer"},
-            "cpu_time": {"type": "integer"},
+            "memory_usage": {"type": "integer"},
             }
         }
-    }
+    
+
+
+
+    "mappings": {
+        "properties": {
+            "cpu_usage": {"type": "float"},
+            }
+        }
